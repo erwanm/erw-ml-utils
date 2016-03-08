@@ -7,4 +7,5 @@
 
 addToEnvVar "$(pwd)/bin" PATH :
 erw-pm activate erw-bash-commons
+erw-pm activate CLGTextTools
 erw-pm activate weka
