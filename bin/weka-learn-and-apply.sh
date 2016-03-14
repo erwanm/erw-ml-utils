@@ -45,13 +45,16 @@ function trainAndApply {
 	if [ -z "$saveModel" ]; then
 	    model=$(mktemp --tmpdir "tmp.$progName.trainAndApply2.XXXXXXXX")
 	fi
+	stderrTmp=$(mktemp --tmpdir "tmp.$progName.trainAndApply2A.XXXXXXXX")
 	if [ -z "$paramToAddQuoted" ]; then # EM April 14: dummy -T option to force no cross-validation during testing
-	    java -Djava.io.tmpdir=$TMPDIR $class -t "$trainArff" -T "$testArff" -d "$model" >"$wekaStdOut"  2> >(grep -v "Picked up _JAVA_OPTIONS:")
+	    java -Djava.io.tmpdir=$TMPDIR $class -t "$trainArff" -T "$testArff" -d "$model" >"$wekaStdOut"  2>"$stderrTmp"
 	    status=$?
 	else
-	    java -Djava.io.tmpdir=$TMPDIR $class "$paramToAddQuoted" -t "$trainArff" -T "$testArff" -d "$model" >"$wekaStdOut"   2> >(grep -v "Picked up _JAVA_OPTIONS:")
+	    java -Djava.io.tmpdir=$TMPDIR $class "$paramToAddQuoted" -t "$trainArff" -T "$testArff" -d "$model" >"$wekaStdOut"  2>"$stderrTmp"
 	    status=$?
 	fi
+	cat "$stderrTmp" | grep -v "Picked up _JAVA_OPTIONS:" 1>&2
+	rm -f "$stderrTmp"
 	if [ $status -ne 0 ]; then
 	    echo "$progName,$LINENO: weka training returned an error, aborting. trainArff=$trainArff" 1>&2
 	    exit 1
