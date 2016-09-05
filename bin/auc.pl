@@ -34,7 +34,7 @@ sub usage {
 	print $fh "Options:\n";
 	print $fh "  -h: help message\n";
 	print $fh "  -p <precision>: number of decimal digits in the result.\n";
-	print $fh "  -l <pos:neg>: specify labels in gold file instead of 0 and 1.\n"; 
+	print $fh "  -l <neg:pos>: specify labels in gold file instead of 0:1.\n"; 
 	print $fh "\n";
 }
 

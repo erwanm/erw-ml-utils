@@ -35,7 +35,7 @@ sub usage {
 	print $fh "  -c: compute C\@1 instead of accuracy: instances scored exactly\n";
 	print $fh "      0.5 are considered 'unanswered'.\n";
         print $fh "  -p <precision>: number of decimal digits in the result.\n";
- 	print $fh "  -l <pos:neg>: specify labels in gold file instead of 0 and 1.\n"; 
+ 	print $fh "  -l <neg:pos>: specify labels in gold file instead of 0:1.\n"; 
 	print $fh "\n";
 }
 
@@ -75,7 +75,7 @@ while (<PRED>) {
 	    $pred{$cols[0]} = $labelsGold[0];
 	}
     }
-#    print STDERR "DEBUG: pred{$cols[0]} = $pred{$cols[0]}\n";
+#    print STDERR "DEBUG: pred{$cols[0]} = $cols[1] => $pred{$cols[0]}\n";
 #    print "A\t$cols[0]\n";
 }
 close(PRED);
@@ -100,6 +100,7 @@ foreach my $id (keys %gold) {
 		die "BUG, gold value is '$gold{$id}'; expecting '$labelsGold[0]' or '$labelsGold[1]'";
 	    }
 	}
+#	print STDERR "DEBUG: id=$id, gold=$gold{$id}, pred=$pred{$id}, tp=$tp, tn=$tn, total=$total\n";
     }
  #   print STDERR "DEBUG: id=$id,total=$total,tn=$tn,tp=$tp,unans=$unans,pred=$pred{$id},gold=$gold{$id}\n";
 
