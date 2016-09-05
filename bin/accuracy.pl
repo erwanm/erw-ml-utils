@@ -12,6 +12,7 @@ my $c1 = 0;
 my @labelsGold = ("0","1");
 
 my $specialUnanswered = "## UNANSWERED ##";
+my $nbDigits=undef;
 
 sub usage {
 	my $fh = shift;
@@ -33,19 +34,22 @@ sub usage {
 	print $fh "  -h: help message\n";
 	print $fh "  -c: compute C\@1 instead of accuracy: instances scored exactly\n";
 	print $fh "      0.5 are considered 'unanswered'.\n";
-	print $fh "  -l <pos:neg>: specify labels in gold file instead of 0 and 1.\n"; 
+        print $fh "  -p <precision>: number of decimal digits in the result.\n";
+ 	print $fh "  -l <pos:neg>: specify labels in gold file instead of 0 and 1.\n"; 
 	print $fh "\n";
 }
 
 # PARSING OPTIONS
 my %opt;
-getopts('hl:c', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
+getopts('hl:cp:', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
 usage($STDOUT) && exit 0 if $opt{h};
 print STDERR "2 arguments expected but ".scalar(@ARGV)." found: ".join(" ; ", @ARGV)  && usage(*STDERR) && exit 1 if (scalar(@ARGV) != 2);
 my $goldFile = $ARGV[0];
 my $predFile =  $ARGV[1];
 
 $c1 = defined($opt{c});
+$nbDigits = $opt{p} if (defined($opt{p}));
+
 @labelsGold = split(":", $opt{l}) if (defined($opt{l}));
 
 my %pred;
@@ -76,8 +80,12 @@ while (<PRED>) {
 }
 close(PRED);
 
+die "Error: gold file '$goldFile' contains ".scalar(keys %gold)." instances whereas pred file '$predFile' contains  ".scalar(keys %pred)." instances." if (scalar(keys %gold) != scalar(keys %pred));
+
+
 my ($tp,$tn,$total, $unans) =(0,0,0,0);
 foreach my $id (keys %gold) {
+    die "Error: no id '$id' found in pred file '$predFile'." if (!defined($pred{$id}));
 #    print "B\t$id\n";
     $total++;
     if ($pred{$id} eq $specialUnanswered) {
@@ -96,13 +104,20 @@ foreach my $id (keys %gold) {
  #   print STDERR "DEBUG: id=$id,total=$total,tn=$tn,tp=$tp,unans=$unans,pred=$pred{$id},gold=$gold{$id}\n";
 
 }
-my $accu=($tp+$tn)/$total;
 if ($c1) {
     my $correct = $tp + $tn;
-#    my $c1 = $accu +  $unans * $accu / $total ; 
     my $c1 = ($correct + ($unans * $correct/$total)) / $total ;
-    print "$c1\t$tp\t$tn\t$unans\n";
+    if (defined($nbDigits)) {
+	printf("%.${nbDigits}f\t$tp\t$tn\t$unans\n", $c1);
+    } else {
+	print "$c1\t$tp\t$tn\t$unans\n";
+    }
 } else {
-    print "$accu\t$tp\t$tn\n";
+    my $accu=($tp+$tn)/$total;
+    if (defined($nbDigits)) {
+	printf("%.${nbDigits}f\t$tp\t$tn\n", $accu);
+    } else {
+	print "$accu\t$tp\t$tn\n";
+    }
 }
 
