@@ -2,11 +2,36 @@
 
 # weka.jar (and any other java libs) must be in CLASSPATH
 
+progName="weka-predict.sh"
 javaMem="1024m"
 
+function usage {
+    echo
+    echo "Syntax: $progName <classifer class and options> <test set (arff)> <model input filename> <prediction output filename>" 
+    echo
+    echo "Options:"
+    echo "  -h this help message"
+    echo "  -m <java mem> amount of memory for the JVM. Default: $javaMem."
+    echo
+}
+
+
+while getopts 'hm:' option ; do
+    case $option in
+	"h" ) usage
+	      exit 0;;
+	"m" ) javaMem=$OPTARG;;
+        "?" )
+            echo "Error, unknow option." 1>&2
+            usage 1>&2
+	    exit 1
+    esac
+done
+shift $(($OPTIND - 1)) # skip options already processed above
 if [ $# -ne 4 ]; then
-  echo "Syntax: $0 <classifer class and options> <test set (arff)> <model input filename> <prediction output filename>" 1>&2
-  exit 1
+    echo "Error: 4 parameters expected, $# found." 1>&2
+    usage 1>&2
+    exit 1
 fi
 classifier="$1"
 testSet="$2"

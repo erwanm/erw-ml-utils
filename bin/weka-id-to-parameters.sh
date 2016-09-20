@@ -1,12 +1,36 @@
 #!/bin/bash
-# EM April 14
+# EM April 14, updated sept 16
 # TODO
 
 progName="weka-id-to-parameters.sh"
+
+function usage {
+    echo
+    echo "$progName: usage: $progName <weka id>"
+    echo
+}
+
+
+
+while getopts 'h' option ; do
+    case $option in
+	"h" ) usage
+	      exit 0;;
+        "?" )
+            echo "Error, unknow option." 1>&2
+            usage 1>&2
+	    exit 1
+    esac
+done
+shift $(($OPTIND - 1)) # skip options already processed above
+if [ $# -ne 1 ]; then
+    echo "Error: 1 parameters expected, $# found." 1>&2
+    usage 1>&2
+    exit 1
+fi
 id="$1"
 
 if [ -z "$id" ]; then
-    echo "$progName: usage: $progName <weka id>" 1>&2
     exit 1
 fi
 if [[ $id == M5P-M* ]]; then  # M5P-M4

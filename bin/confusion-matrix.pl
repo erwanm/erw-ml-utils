@@ -12,8 +12,9 @@ sub usage {
     my $fh = shift;
     $fh = *STDOUT if (!defined $fh);
     print $fh "Usage: confusion-matrix.pl [-d]\n";
-    print $fh "       input=STDIN, output=STDOUT\n";
-    print $fh "  reads a 3 columns input <key1> <key2> <val> and writes a two ways table.\n";
+    print $fh "\n";
+    print $fh "  Reads a 3 columns input <key1> <key2> <val> from STDIN and writes a\n";
+    print $fh "  two ways table to STDOUT.\n";
     print $fh "   -d: also prints details (percentage, precision/recall/f-measures by line)\n";
     print $fh "\n";
 }
