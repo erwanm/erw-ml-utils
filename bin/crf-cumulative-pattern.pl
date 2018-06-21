@@ -135,7 +135,7 @@ sub parseRangeValues {
 #   - $colParam->{Nu} = ngram length unigram
 #   - $colParam->{Wb} = window length bigram
 #   - $colParam->{Nb} = ngram length bigram
-#   - $colParam->{posCurrent} = position (int) of the current token in the window (0= first position)
+#   - $colParam->{posCurrent} = L|C|R
 #
 sub parseColumnFormat {
     my ($s) = @_;
