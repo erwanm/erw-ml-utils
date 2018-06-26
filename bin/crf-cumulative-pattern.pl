@@ -101,7 +101,8 @@ sub generateSingleNGram {
 
     my @featParts;
     for (my $n=$start; $n<$start+$nsize; $n++) {
-	push(@featParts, "%X[$n,$col]");
+	# note:  CRF++ requires %x with x lowercase!
+	push(@featParts, "%x[$n,$col]");
     }
     return "$BorU:$name = ".join("/", @featParts);
 }

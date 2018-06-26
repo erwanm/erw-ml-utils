@@ -18,13 +18,15 @@ my $progname = "crf-generate-multi-config.pl";
 my $defaultPosCurrent="C";
 my $combineBigrams=0;
 
-my %fixedParams = ( "tools" => "crf++ wapiti",
+my %fixedParams = ( "crftool" => "crf++ wapiti",
 		    "wapiti.algo" => "l-bfgs sgd-l1 bcd rprop rprop+ rprop-",
 		    "wapiti.sparse" => "0 1",
 		    "crfpp.cost" => "0.01 0.1 1 10 100",
-		    "crfpp.minfreq" => "1 3 5 10 25"
+		    "crfpp.minfreq" => "1 3 5 10 25",
+		    "crfpp.algo" => "CRF MIRA",
+		    "pattern.singleNGramSize" => "0"
     );
-		    
+my $columnPrefix="col.";
     
 sub usage {
 	my $fh = shift;
@@ -174,6 +176,6 @@ for my $colParam (@colParams) {
 	}
     }
 #    print STDERR scalar(@paramValues)."\n";
-    print $paramPrefix.$colParam->{columns}."=".join(" ", @paramValues)."\n";
+    print $paramPrefix.$columnPrefix.$colParam->{columns}."=".join(" ", @paramValues)."\n";
 }
 
