@@ -5,11 +5,10 @@ source common-lib.sh
 source file-lib.sh
 
 
-set -e
 
 progName=$(basename "$BASH_SOURCE")
 
-force=0
+force=""
 paramPrefix=""
 writeTemplateFile=""
 verbose=""
@@ -18,10 +17,14 @@ function usage {
   echo
   echo "Usage: $progName [options] <config file> <training file> <model file>"
   echo
+  echo "  Trains a CRF model <model file> from training data <training file>"
+  echo "  according to the parameters specified in <config file>. In particular"
+  echo "  the template file which defines the features is generated based on"
+  echo "  a few parameters in the config file (see crf-generate-multi-config.sh)."
   echo
   echo "  Options:"
   echo "    -h this help"
-  echo "    -f force recomputing features even if model already there."
+  echo "    -f force recomputing model even if already there."
   echo "    -p <prefix> parameter names prefixed with this in the config file."
   echo "    -t <template file> write template here instead of using a temporary"
   echo "       file."
@@ -40,7 +43,7 @@ while getopts 'hfp:t:v' option ; do
     case $option in
 	"h" ) usage
  	      exit 0;;
-	"f" ) force=1;;
+	"f" ) force="yep";;
 	"p" ) paramPrefix="$OPTARG";;
 	"t" ) writeTemplateFile="$OPTARG";;
 	"v" ) verbose="yep";;
@@ -87,37 +90,40 @@ eval "$comm" || exit $?
 
 # step 2: train the model
 
-readFromParamFile "$configFile" "${paramPrefix}crftool" "$progName: " "" "" "" crfTool
+if [ ! -z "$force" ] || [ ! -s "$modelFile" ]; then
+    readFromParamFile "$configFile" "${paramPrefix}crftool" "$progName: " "" "" "" crfTool
 
-if [ "$crfTool" == "crf++" ]; then
-    readFromParamFile "$configFile" "${paramPrefix}crfpp.cost" "$progName: " "" "" "" crfppCost
-    readFromParamFile "$configFile" "${paramPrefix}crfpp.minfreq" "$progName: " "" "" "" crfppMinfreq
-    readFromParamFile "$configFile" "${paramPrefix}crfpp.algo" "$progName: " "" "" "" crfppAlgo
-    trainOpts="-f $crfppMinfreq -c $crfppCost -a $crfppAlgo"
-    comm="crf_learn $trainOpts $templateFile $trainFile $modelFile"
-elif [ "$crfTool" == "wapiti" ]; then
-    readFromParamFile "$configFile" "${paramPrefix}wapiti.algo" "$progName: " "" "" "" wapitiAlgo
-    readFromParamFile "$configFile" "${paramPrefix}wapiti.sparse" "$progName: " "" "" "" wapitiSparse
-    trainOpts="-a $wapitiAlgo"
-    if [ $wapitiSparse -ne 0 ]; then
-	trainOpts="$trainOpts -s"
+    if [ "$crfTool" == "crf++" ]; then
+	readFromParamFile "$configFile" "${paramPrefix}crfpp.cost" "$progName: " "" "" "" crfppCost
+	readFromParamFile "$configFile" "${paramPrefix}crfpp.minfreq" "$progName: " "" "" "" crfppMinfreq
+	readFromParamFile "$configFile" "${paramPrefix}crfpp.algo" "$progName: " "" "" "" crfppAlgo
+	trainOpts="-f $crfppMinfreq -c $crfppCost -a $crfppAlgo"
+	comm="crf_learn $trainOpts $templateFile $trainFile $modelFile"
+    elif [ "$crfTool" == "wapiti" ]; then
+	readFromParamFile "$configFile" "${paramPrefix}wapiti.algo" "$progName: " "" "" "" wapitiAlgo
+	readFromParamFile "$configFile" "${paramPrefix}wapiti.sparse" "$progName: " "" "" "" wapitiSparse
+	trainOpts="-a $wapitiAlgo"
+	if [ $wapitiSparse -ne 0 ]; then
+	    trainOpts="$trainOpts -s"
+	fi
+	comm="wapiti train $trainOpts -p $templateFile $trainFile $modelFile"
+    else
+	echo "Error: invalid value for parameter 'crfTool': '$crfTool'" 1>&2
     fi
-    comm="wapiti train $trainOpts -p $templateFile $trainFile $modelFile"
-else
-    echo "Error: invalid value for parameter 'crfTool': '$crfTool'" 1>&2
-fi
-if [ -z "$verbose" ]; then
-    comm="$comm >/dev/null"
-fi
-#echo "DEBUG: '$comm'" 1>&2
-stderrFile=$(mktemp --tmpdir "tmp.$progName.stderr.XXXXXXXXXX")
-eval "$comm 2>$stderrFile"
-if [ $? -ne 0 ]; then
-    cat $stderrFile 1>&2
-    exit 3
+    if [ -z "$verbose" ]; then
+	comm="$comm >/dev/null"
+    fi
+    #echo "DEBUG: '$comm'" 1>&2
+    stderrFile=$(mktemp --tmpdir "tmp.$progName.stderr.XXXXXXXXXX")
+    eval "$comm 2>$stderrFile"
+    if [ $? -ne 0 ]; then
+	cat $stderrFile 1>&2
+	exit 3
+    fi
+
+    rm -f $stderrFile
 fi
 
-rm -f $stderrFile
 if [ -z "$writeTemplateFile" ]; then
     rm -f $templateFile
 fi
