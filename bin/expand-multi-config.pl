@@ -1,14 +1,14 @@
 #!/usr/bin/perl
 
-
+# update July 18: added the functions from CLGTextTools (not great but more convenient)
 
 use strict;
 use warnings;
 use Getopt::Std;
 use Carp;
 use Log::Log4perl;
-use CLGTextTools::Commons qw/readConfigFile rankWithTies/;
-use CLGTextTools::Stats qw/pickInList pickInListProbas/;
+#use CLGTextTools::Commons qw/readConfigFile rankWithTies/;
+#use CLGTextTools::Stats qw/pickInList pickInListProbas/;
 use Data::Dumper;
 
 my $progName="expand-multi-config.pl";
@@ -63,6 +63,234 @@ sub usage {
 
 	print $fh "\n";
 }
+
+
+
+
+#twdoc readConfigFile($filename)
+#
+# Reads a UTF8 text "config" file, i.e. with lines of the form ``paramName=value``. Comments (starting with #) and empty lines are ignored.
+#
+# * returns a hash ``res->{paramName} = value``
+#
+#/twdoc
+sub readConfigFile {
+    my $filename=shift;
+    open( FILE, '<:encoding(UTF-8)', $filename ) or die "Cannot read config file '$filename'.";
+    my %res;
+    local $_;
+    while (<FILE>) {
+	#print "debug: $_";
+	chomp;
+	if (m/#/) {
+	    s/#.*$//;  # remove comments
+	}
+	s/^\s+//; # remove spaces
+	s/\s+$//;
+	if ($_) {
+	    my ($name, $value) = ( $_ =~ m/([^=]+)=(.*)/);
+	    $res{$name} = $value;
+	    #print "debug: '$name'->'$value'\n";
+	}
+    }
+    close(FILE);
+    return \%res;
+}
+
+
+
+#twdoc rankWithTies($parameters)
+#
+# Computes a ranking which takes ties into account, i.e. two identical values are assigned the same rank.
+# The sum property is also fulfilled, i.e. the sum of all ranks is always 1+2+...+N (if first rank is 1). This implies
+# that the rank assigned to several identical values is the average of the ranks they would have been assigned if ties were not taken into account.
+#
+# ``$parameters`` is a hash which must define:
+# * values: a hash ref of the form ``$values->{id} = value``. Can contain NaN values, but these values will be ignored.
+# and optionally defines:
+#
+# * array: if defined, an array ref which contains the ids used as keys in values
+# * arrayAlreadySorted: (only if array is defined, see above). if set to true, "array" must be already sorted. the sorting step
+#   will not be done (this way it is possible to use any kind of sorting) (the ranking step - with ties - is still done of course)
+# * highestValueFirst: false by default. set to true in order to rank from highest to lowest values. Useless if array is defined.
+# * printToFileHandle: if defined, a file handle where ranks will be printed.
+# * dontPrintValue: if defined and if printToFileHandle is defined, then lines are of the form ``<id> [otherData] <rank>"  instead of "<id> [otherData] <value> <rank>``.
+#
+# * otherData: hash ref of the form ``$otherData->{$id}=data``. if defined and if printToFileHandle is defined, then lines
+#   like ``<id> <otherData> [value] <rank>`` will be written to the file instead of ``<id> [value] <rank>``. if the "data" contains
+#   several columns, these columns must be already separated together but should not contain a column separator at the beginning
+#   or at the end.
+# * columnSeparator: if defined and if printToFileHandle is defined, will be used as column separator (tabulation by default).
+# * noNaNWarning: 0 by default, which means that a warning is issued if NaN values are found. This does not happen if this parameter
+#   is set to true. not used if $array is defined.
+# * dontStoreRanking: By default the returned value is a hash ref of the form ``$ranking->{id}=rank`` containing the whole ranking.
+#  If dontStoreRanking is true then nothing is returned.
+# * firstRank: rank starting value (1 by default).
+# * addNaNValuesBefore: boolean, default 0. by default NaN values are discarded. If true, these values are prepended to the ranking (before first real value).
+# * addNaNValuesAfter: boolean, default 0. by default NaN values are discarded. If true, these values are appended to the ranking (after last real value).
+#
+#/twdoc
+sub rankWithTies {
+
+    my ($parameters, $logger) = @_;
+    my $firstRank = defined( $parameters->{firstRank} ) ? $parameters->{firstRank} : 1;
+    my $colSep = defined( $parameters->{columnSeparator} ) ? $parameters->{columnSeparator} : "\t";
+    my $values = $parameters->{values};
+    confessLog($logger, "Error: \$parameters->{values} must be defined.") if ( !defined($values) );
+    my $array = $parameters->{array};
+    if ( !defined($array) || !$parameters->{arrayAlreadySorted} ) {
+	my @sortedIds;
+	if ( $parameters->{highestValueFirst} ) {
+	    $logger->debug("Sorting by descending order (highest value first)") if ($logger);
+	    @sortedIds =
+		sort { $values->{$b} <=> $values->{$a} }
+	    grep { $values->{$_} == $values->{$_} }
+	    defined($array)
+		? @$array
+		: keys %$values
+		; # tricky: remove the NaN values before sorting. found in perl man page for sort.
+	} else {
+	    $logger->debug("Sorting by ascending order (lowest value first)") if ($logger);
+	    @sortedIds =
+		sort { $values->{$a} <=> $values->{$b} }
+	    grep { $values->{$_} == $values->{$_} }
+	    defined($array)
+		? @$array
+		: keys %$values
+		; # tricky: remove the NaN values before sorting. found in perl man page for sort.
+	}
+	if (   $parameters->{addNaNValuesBefore} || $parameters->{addNaNValuesAfter} ) {
+	    my @NaNIds =
+		grep { $values->{$_} != $values->{$_} }
+	    defined($array) ? @$array : keys %$values;
+	    my $nbValues    = scalar( keys %$values );
+	    my $nbNaNValues = scalar(@NaNIds);
+	    if ( scalar($nbNaNValues) > 0 ) {
+		if ( $parameters->{addNaNValuesBefore} ) {
+		    unshift( @sortedIds, @NaNIds );
+		    if ( !$parameters->{noNaNWarning} ) {
+			if ($logger) {
+			    $logger->logwarn("$nbNaNValues NaN values (among $nbValues) prepended to ranking.") ;
+			} else {
+			    warn("$nbNaNValues NaN values (among $nbValues) prepended to ranking.") ;
+			}
+		    }
+		}
+		else {
+		    push( @sortedIds, @NaNIds );
+		    if ( !$parameters->{noNaNWarning} ) {
+			if ($logger) {
+			    $logger->logwarn(
+				"$nbNaNValues NaN values (among $nbValues) appended to ranking."
+				) ;
+			} else {
+			    warn "$nbNaNValues NaN values (among $nbValues) appended to ranking.";
+			}
+		    }
+		}
+	    }
+	}
+	elsif ( !$parameters->{noNaNWarning} ) {
+	    my $nbValues    = scalar( keys %$values );
+	    my $nbNaNValues = $nbValues - scalar(@sortedIds);
+	    warnLog($logger, "$nbNaNValues NaN values (among $nbValues) discarded from ranking." ) if ( $nbNaNValues > 0 );
+	}
+	$array = \@sortedIds;
+    }
+    my %ranks;
+    my $i       = 0;
+    my $fh      = $parameters->{printToFileHandle};
+    my $ranking = undef;
+    while ( $i < scalar(@$array) ) {
+	my $currentFirst = $i;
+	my $nbTies       = 0;
+	while (( $i + 1 < scalar(@$array) )
+	       && ( $values->{ $array->[$i] } == $values->{ $array->[ $i + 1 ] } )
+	    )
+	{
+	    $nbTies++;
+	    $i++;
+	}
+	my $rank = ( ( 2 * ( $currentFirst + $firstRank ) ) + $nbTies ) / 2;
+	for ( my $j = $currentFirst ; $j <= $currentFirst + $nbTies ; $j++ ) {
+	    $ranks{ $array->[$j] } = $rank;
+	    if ( defined($fh) ) {
+		my $otherData =  defined( $parameters->{otherData} ) ? $colSep . $parameters->{otherData}->{ $array->[$j] } : "";
+		my $valueData =  $parameters->{dontPrintValue}  ? "" : $colSep . $values->{ $array->[$j] };
+		print $fh $array->[$j] . $otherData . $valueData . $colSep . $rank . "\n";
+	    }
+	    if ( !$parameters->{dontStoreRanking} ) {
+		$ranking->{ $array->[$j] } = $rank;
+	    }
+	}
+	$logger->debug("found $nbTies ties starting at position $currentFirst+1, assigned rank is $rank") if ($logger);
+	$i++;
+    }
+    return $ranking if ( !$parameters->{dontStoreRanking} );
+
+}
+
+
+
+#twdoc pickInList(@$list)
+#
+# picks randomly a value in a list.
+# Uniform probability distribution over cells (thus a value occuring twice is twice more likely to get picked than a value occuring only once).
+# Fatal error if the array is empty.
+#
+#/twdoc
+sub pickInList {
+    my $list = shift;
+    #print Dumper($list);
+    confess "Wrong parameter: not an array or empty array" if ((ref($list) ne "ARRAY") || (scalar(@$list)==0));
+    return $list->[int(rand(scalar(@$list)))];
+}
+
+
+
+#twdoc pickIndex(@$list)
+#
+# picks an index randomly in a list, i.e. simply returns an integer between 0 and n-1, where n is the size of the input list.
+#
+#/twdoc
+#
+sub pickIndex {
+    my $list = shift;
+
+    confess "Wrong parameter: not an array or empty array" if ((ref($list) ne "ARRAY") || (scalar(@$list)==0));
+    my $n = scalar(@$list);
+    return int(rand(scalar(@$list)));
+}
+
+
+#twdoc pickInListProbas(%$hash)
+#
+# picks a random value among (keys %$hash) following, giving each key a probability proportional to $hash->{key} w.r.t to all values in (values %$hash)
+# Remark: method is equivalent to scaling the sum of the values (values %$hash) to 1, as if these represented a stochastic vector of probabilities.
+# Fatal error if the array is empty.
+#
+#/twdoc
+sub pickInListProbas {
+    my $areaByValue = shift;
+    confess "Wrong parameter: not a hash or empty hash" if ((ref($areaByValue) ne "HASH") || (scalar(keys %$areaByValue)==0));
+    my $areaTotal = 0;
+    while (my ($item, $area) = each %$areaByValue) {
+	$areaTotal += $area;
+	#    print STDERR "DEBUG $item : $area (total = $areaTotal)\n";
+    }
+    my $rndProba = rand($areaTotal);
+    $areaTotal = 0;
+    while (my ($item, $area) = each %$areaByValue) {
+	$areaTotal += $area;
+	#    print STDERR "DEBUG $item : $area (total = $areaTotal, random = $rndProba)\n";
+	return $item if ($rndProba < $areaTotal);
+    }
+    die "BUG should never have arrived here";
+}
+
+
+
+    
 
 
 sub writeConfig {
