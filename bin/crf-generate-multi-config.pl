@@ -19,12 +19,21 @@ my $defaultPosCurrent="C";
 my $combineBigrams=0;
 
 my %fixedParams = ( "crftool" => "crf++ wapiti",
+		    "pattern.singleNGramSize" => "0",
+		    "wapiti.algo" => "l-bfgs",
+		    "wapiti.sparse" => "0",
+		    "crfpp.cost" => "1.0",
+		    "crfpp.minfreq" => "1",
+		    "crfpp.algo" => "CRF"
+    );
+my %fixedParamsWapiti = (
 		    "wapiti.algo" => "l-bfgs sgd-l1 bcd rprop rprop+ rprop-",
-		    "wapiti.sparse" => "0 1",
+		    "wapiti.sparse" => "0 1"
+    );
+my %fixedParamsCrfpp = (
 		    "crfpp.cost" => "0.01 0.1 1 10 100",
 		    "crfpp.minfreq" => "1 3 5 10 25",
-		    "crfpp.algo" => "CRF MIRA",
-		    "pattern.singleNGramSize" => "0"
+		    "crfpp.algo" => "CRF MIRA"
     );
 my $columnPrefix="col.";
     
@@ -46,7 +55,7 @@ sub usage {
 	print $fh "  from (0,0) up to (Wu,Nu); if (Wb,Nb) are specified, an additional variant\n";
 	print $fh "  is generated for every (Wu,Nu); the last part specifies the position of the\n";
  	print $fh "  current token in the window, it must include at least one in [LCR] but \n";
-	print $fh "  several possibilities are allowed (default: '$defaultPosCurrent').";
+	print $fh "  several possibilities are allowed (default: '$defaultPosCurrent').\n";
  	print $fh "  Output printed to STDOUT by default (see also -o).\n";
  	print $fh "\n";
 # 	print $fh "  For each column (or set of columns), an argument has the following format:\n";
@@ -72,6 +81,8 @@ sub usage {
  	print $fh "    -b generate all the combinations of bigrams with unigram patterns, instead\n";
  	print $fh "       of adding a single bigram variant which 'follows' the unigram version.\n";
  	print $fh "    -p <prefix> parameter name prefix for all the generated parameters.\n";
+ 	print $fh "    -w include Wapiti-only variants of parameters.\n";
+ 	print $fh "    -c include CRF++-only variants of parameters.\n";
  	print $fh "\n";
 }
 
@@ -125,7 +136,7 @@ sub min {
 
 # PARSING OPTIONS
 my %opt;
-getopts('ho:bp:', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
+getopts('ho:bp:wc', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
 usage(*STDOUT) && exit 0 if $opt{h};
 print STDERR "At least one argument expected"  && usage(*STDERR) && exit 1 if (scalar(@ARGV) < 1);
 
@@ -133,6 +144,17 @@ print STDERR "At least one argument expected"  && usage(*STDERR) && exit 1 if (s
 $combineBigrams = $opt{b};
 my $outputFilename = $opt{o};
 my $paramPrefix=defined($opt{p}) ? $opt{p} : "";
+
+if ($opt{w}) {
+    for my $k (keys %fixedParamsWapiti) {
+	$fixedParams{$k} = $fixedParamsWapiti{$k};
+    }
+}
+if ($opt{c}) {
+    for my $k (keys %fixedParamsCrfpp) {
+	$fixedParams{$k} = $fixedParamsCrfpp{$k};
+    }
+}
 
 my $fh;
 if ($outputFilename) {
