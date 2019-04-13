@@ -60,7 +60,26 @@ elif [[ $id == LogRegBoost ]]; then  #
 elif [[ $id == LinearReg ]]; then  # 
     param="weka.classifiers.functions.LinearRegression" 
 elif [[ $id == SMO ]]; then  # 
-    param="weka.classifiers.functions.SMOreg" 
+    param="weka.classifiers.functions.SMOreg"
+elif [[ $id == NaiveBayes* ]]; then # possibly followed by K, D or KD
+    param="weka.classifiers.bayes.NaiveBayes"
+    opt=${id#NaiveBayes}
+    if [[ $opt == *K* ]]; then
+	param="$param -K"
+    fi
+    if [[ $opt == *D* ]]; then
+	param="$param -D"
+    fi
+elif [[ $id == SVM ]]; then  # hopefully this is SVM for classification as opposed to regression??
+    param="weka.classifiers.functions.SMO"
+elif [[ $id == "kNN*" ]]; then # optionally followed by <N>, e.g. "kNN3"
+    opt=${id#kNN}
+    if [ ! -z "$opt" ]; then
+	param="$param -K $opt"
+    fi
+    param="weka.classifiers.lazy.IBk"
+elif [[ $id == "part" ]]; then
+    param="weka.classifiers.rules.PART"
 else
     echo "$progName: invalid id '$id'" 1>&2
     exit 2
