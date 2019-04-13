@@ -62,7 +62,7 @@ foreach my $val1 (sort keys %res) {
 	$tp=0 if (!defined($tp));
 	my $prec = (defined($positiveVal2{$val1}))?($tp / $positiveVal2{$val1}):"NaN";
 	my $recall = ($actualVal1>0)?($tp / $actualVal1):"NaN";
-	my $f1 = (($prec ne "NaN")&&($recall ne "NaN"))?( 2 * $prec * $recall / ($prec + $recall)):"NaN";
+	my $f1 = (($prec ne "NaN")&&($recall ne "NaN") && ($prec+$recall>0) )?( 2 * $prec * $recall / ($prec + $recall)):"NaN";
 	my $str = ($prec ne "NaN")?sprintf("\t\t%.2f", $prec*100):"\t\tNaN";
 	$str .= ($recall ne "NaN")?sprintf("\t\t%.2f", $recall*100):"\t\tNaN";
 	$str .= ($f1 ne "NaN")?sprintf("\t\t%.2f", $f1*100):"\t\tNaN";

@@ -9,17 +9,19 @@ my $nameRelation = "my-data";
 sub usage {
 	my $fh = shift;
 	$fh = *STDOUT if (!defined $fh);
-	print $fh "Usage: convert-to-arff.pl [-n <nominal columns names[;<possible values , separated>] ':' separated>]\n";
+	print $fh "Usage: convert-to-arff.pl [-b] [-n <nominal columns names[;<possible values , separated>] ':' separated>]\n";
 	print $fh "   input read from stdin, output written to stdout.\n";
 	print $fh " input file must have a header line with columns titles\n";
+	print $fh " -b = attributes are binary (0,1 values) instead of numeric by default\n";
 }
 
 # PARSING OPTIONS
 my %opt;
-getopts('hn:', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
+getopts('hbn:', \%opt ) or  ( print STDERR "Error in options" &&  usage(*STDERR) && exit 1);
 usage($STDOUT) && exit 0 if $opt{h};
 print STDERR "0 arguments expected but ".scalar(@ARGV)." found: ".join(" ; ", @ARGV)  && usage(*STDERR) && exit 1 if (scalar(@ARGV) != 0);
 my $nominalNames=$opt{n};
+my $binary = $opt{b};
 
 my %valuesAsInput;
 my %possibleValues;
@@ -73,7 +75,11 @@ foreach my $attr (@header) {
     if (defined($possibleValues{$attr})) {
 	print "\@ATTRIBUTE '$attr' {".join(",", (sort keys %{$possibleValues{$attr}}))."}\n";
     } else {
-	print "\@ATTRIBUTE '$attr' NUMERIC\n";
+	if ($binary) {
+	    print "\@ATTRIBUTE '$attr' {0,1}\n";
+	} else {
+	    print "\@ATTRIBUTE '$attr' NUMERIC\n";
+	}
     }
 }
 print "\@DATA\n";
