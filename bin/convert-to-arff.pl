@@ -43,7 +43,7 @@ my @data = <STDIN>;
 
 my $header = shift(@data);
 chomp($header);
-my @header = split(/\s+/, $header);
+my @header = split(/\t+/, $header);
 my %colsNominal;
 for (my $i=0; $i<scalar(@header); $i++) {
 #    print STDERR "debug: col $i='$header[$i]'\n";
@@ -56,7 +56,7 @@ foreach my $name (keys %possibleValues) {
 
 foreach (@data) {
     chomp;
-    my @columns = split;
+    my @columns = split(/\t/, $_);
     foreach my $name (keys %possibleValues) {
 	if (defined($valuesAsInput{$name})) {
 	    die "Invalid value for $name: ".$columns[$colsNominal{$name}] if (($columns[$colsNominal{$name}] ne "?") && (!defined($possibleValues{$name}->{$columns[$colsNominal{$name}]})));
