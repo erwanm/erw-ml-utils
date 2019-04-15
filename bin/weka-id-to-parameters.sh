@@ -72,12 +72,12 @@ elif [[ $id == NaiveBayes* ]]; then # possibly followed by K, D or KD
     fi
 elif [[ $id == SVM ]]; then  # hopefully this is SVM for classification as opposed to regression??
     param="weka.classifiers.functions.SMO"
-elif [[ $id == "kNN*" ]]; then # optionally followed by <N>, e.g. "kNN3"
+elif [[ $id == kNN* ]]; then # optionally followed by <N>, e.g. "kNN3"
+    param="weka.classifiers.lazy.IBk"
     opt=${id#kNN}
     if [ ! -z "$opt" ]; then
 	param="$param -K $opt"
     fi
-    param="weka.classifiers.lazy.IBk"
 elif [[ $id == "part" ]]; then
     param="weka.classifiers.rules.PART"
 else
