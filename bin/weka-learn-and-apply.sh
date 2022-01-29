@@ -53,7 +53,7 @@ function trainAndApply {
 	    java -Djava.io.tmpdir=$TMPDIR $class "$paramToAddQuoted" -t "$trainArff" -T "$testArff" -d "$model" >"$wekaStdOut"  2>"$stderrTmp"
 	    status=$?
 	fi
-	cat "$stderrTmp" | grep -v "Picked up _JAVA_OPTIONS:" 1>&2
+	cat "$stderrTmp" | grep -v "Picked up _JAVA_OPTIONS:" | grep -v "llegal reflective" | grep -v "illegal access operations will be denied" | grep -v "Please consider reporting this" | grep -v "com.github.fommil.netlib" 1>&2
 	rm -f "$stderrTmp"
 	if [ $status -ne 0 ]; then
 	    echo "$progName,$LINENO: weka training returned an error, aborting. trainArff=$trainArff" 1>&2
@@ -66,7 +66,7 @@ function trainAndApply {
     else
 	model="$applyModel"
     fi
-    java -Djava.io.tmpdir=$TMPDIR weka.filters.supervised.attribute.AddClassification -serialized "$model" -classification -remove-old-class -i "$testArff" -o "$outputArff" -c last  2> >(grep -v "Picked up _JAVA_OPTIONS:")
+    java -Djava.io.tmpdir=$TMPDIR weka.filters.supervised.attribute.AddClassification -serialized "$model" -classification -remove-old-class -i "$testArff" -o "$outputArff" -c last  2> >(grep -v "Picked up _JAVA_OPTIONS:" | grep -v "llegal reflective" | grep -v "illegal access operations will be denied" | grep -v "Please consider reporting this" | grep -v "com.github.fommil.netlib")
     status=$?
     if [ $status -ne 0 ]; then
 	echo "$progName,$LINENO: weka testing returned an error, aborting. testArff=$testArff" 1>&2
