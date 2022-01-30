@@ -58,7 +58,12 @@ my %gold;
 open( GOLD, "<", $goldFile ) or die "Cannot read $goldFile.";
 while (<GOLD>) {
     chomp;
-    my @cols = split;
+    my @cols;
+    if (m/\t/) { # if line contains tab, tab assumed as separator
+	@cols = split('\t');
+    } else {     # otherwise any separator (probably whitespace)
+	@cols = split;
+    }
     $gold{$cols[0]} = $cols[1];
 }
 close(GOLD);
