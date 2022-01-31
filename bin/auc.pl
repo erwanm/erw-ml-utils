@@ -67,7 +67,7 @@ while (<GOLD>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
-#    print "DEBUG gold id = '".$cols[0]."'\n";
+    print STDERR "DEBUG gold id = '".$cols[0]."'\n";
     $gold{$cols[0]} = $cols[1];
 }
 close(GOLD);
@@ -76,7 +76,7 @@ while (<PRED>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
-#    print "DEBUG pred id = '".$cols[0]."'\n";
+    print STDERR "DEBUG pred id = '".$cols[0]."'\n";
     $pred{$cols[0]} = $cols[1];
 }
 close(PRED);
