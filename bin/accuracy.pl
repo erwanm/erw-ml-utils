@@ -64,16 +64,20 @@ while (<GOLD>) {
 }
 close(GOLD);
 open(PRED, "<" , $predFile) or die "Cannot read $predFile.";
+#print "PREDFILE=$predFile\n";
 while (<PRED>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
+#    print "cols[0]=$cols[0]\t";
     if ($cols[1] > 0.5) {
+#	print "$cols[1] -> POS -> $labelsGold[1]\n";
 	$pred{$cols[0]} = $labelsGold[1];
     } else {
 	if ($c1 && ($cols[1] == 0.5)) {
 	    $pred{$cols[0]} = $specialUnanswered;
 	} else {
+#	    print "$cols[1] -> NEG -> $labelsGold[0]\n";
 	    $pred{$cols[0]} = $labelsGold[0];
 	}
     }
@@ -88,7 +92,8 @@ die "Error: gold file '$goldFile' contains ".scalar(keys %gold)." instances wher
 my ($tp,$tn,$total, $unans) =(0,0,0,0);
 foreach my $id (keys %gold) {
     die "Error: no id '$id' found in pred file '$predFile'." if (!defined($pred{$id}));
-#    print "B\t$id\n";
+#    print STDERR "B\t$id\n";
+#    print STDERR "$gold{$id} - $pred{$id}\n";
     $total++;
     if ($pred{$id} eq $specialUnanswered) {
 	$unans++;
