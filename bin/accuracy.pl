@@ -60,6 +60,10 @@ while (<GOLD>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
+    if (scalar(@cols)>2) {
+	my $val = pop(@cols);
+	@cols = ( join(' ', @cols), $val );
+    }
     $gold{$cols[0]} = $cols[1];
 }
 close(GOLD);
@@ -69,6 +73,10 @@ while (<PRED>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
+    if (scalar(@cols)>2) {
+	my $val = pop(@cols);
+	@cols = ( join(' ', @cols), $val );
+    }
 #    print "cols[0]=$cols[0]\t";
     if ($cols[1] > 0.5) {
 #	print "$cols[1] -> POS -> $labelsGold[1]\n";

@@ -67,6 +67,10 @@ while (<GOLD>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
+    if (scalar(@cols)>2) {
+	my $val = pop(@cols);
+	@cols = ( join(' ', @cols), $val );
+    }
 #    print STDERR "DEBUG gold id = '".$cols[0]."'\n";
     $gold{$cols[0]} = $cols[1];
 }
@@ -76,6 +80,10 @@ while (<PRED>) {
     chomp;
     # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
     my @cols = (m/\t/) ? split('\t') : split;
+    if (scalar(@cols)>2) {
+	my $val = pop(@cols);
+	@cols = ( join(' ', @cols), $val );
+    }
 #    print STDERR "DEBUG pred id = '".$cols[0]."'\n";
     $pred{$cols[0]} = $cols[1];
 }
