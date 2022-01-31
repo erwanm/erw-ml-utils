@@ -65,19 +65,18 @@ my %gold;
 open( GOLD, "<", $goldFile ) or die "Cannot read $goldFile.";
 while (<GOLD>) {
     chomp;
-    my @cols;
-    if (m/\t/) { # if line contains tab, tab assumed as separator
-	@cols = split('\t');
-    } else {     # otherwise any separator (probably whitespace)
-	@cols = split;
-    }
+    # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
+    my @cols = (m/\t/) ? split('\t') : split;
+#    print "DEBUG gold id = '".$cols[0]."'\n";
     $gold{$cols[0]} = $cols[1];
 }
 close(GOLD);
 open(PRED, "<" , $predFile) or die "Cannot read $predFile.";
 while (<PRED>) {
     chomp;
-    my @cols = split;
+    # if line contains tab, tab assumed as separator, otherwise any separator (probably whitespace)
+    my @cols = (m/\t/) ? split('\t') : split;
+#    print "DEBUG pred id = '".$cols[0]."'\n";
     $pred{$cols[0]} = $cols[1];
 }
 close(PRED);
