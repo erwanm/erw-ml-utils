@@ -76,10 +76,10 @@ sub usage {
 #/twdoc
 sub readConfigFile {
     my $filename=shift;
-    open( FILE, '<:encoding(UTF-8)', $filename ) or die "Cannot read config file '$filename'.";
+    open( CONFIGFILE, '<:encoding(UTF-8)', $filename ) or die "Cannot read config file '$filename'.";
     my %res;
     local $_;
-    while (<FILE>) {
+    while (<CONFIGFILE>) {
 	#print "debug: $_";
 	chomp;
 	if (m/#/) {
@@ -93,7 +93,7 @@ sub readConfigFile {
 	    #print "debug: '$name'->'$value'\n";
 	}
     }
-    close(FILE);
+    close(CONFIGFILE);
     return \%res;
 }
 
@@ -422,16 +422,17 @@ sub writeGeneticCombinations {
     my ($params, $multiConfigs) = @_;
     my @prevGenConfigs;
     my %prevGenPerf;
-    open(FILE, "<", $params->{prevGenFile}) ||  die "$progName: Cannot open file '".$params->{prevGenFile}."'";
+    open(RESFILE, "<", $params->{prevGenFile}) or  die "$progName: Cannot open file '".$params->{prevGenFile}."' $!";
 #    print STDERR Dumper($multiConfigs);
-    while (<FILE>) {
+    while (<RESFILE>) {
 	chomp;
+	print STDERR "DEBUG: '$_'\n";
 	my ($configFile, $perf) = split("\t", $_);
 	my $config = readConfigFile($configFile);
 	push(@prevGenConfigs, $config);
 	$prevGenPerf{scalar(@prevGenConfigs)-1} = $perf;
     }
-    close(FILE);
+    close(RESFILE);
     my $avgNbBreeders = scalar(@prevGenConfigs) * $params->{propBreeders};
     die "$progName error: genetic algorithm: the average number of breeders is too low: $avgNbBreeders (previous population=".scalar(@prevGenConfigs)."; prop. breeders=".$params->{propBreeders}.")" if ($avgNbBreeders<3);
     warn "$progName warning: genetic algorithm: the average number of breeders is only $avgNbBreeders (previous population=".scalar(@prevGenConfigs)."; prop. breeders=".$params->{propBreeders}.")" if ($avgNbBreeders<6);
