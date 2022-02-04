@@ -426,7 +426,6 @@ sub writeGeneticCombinations {
 #    print STDERR Dumper($multiConfigs);
     while (<RESFILE>) {
 	chomp;
-	print STDERR "DEBUG: '$_'\n";
 	my ($configFile, $perf) = split("\t", $_);
 	my $config = readConfigFile($configFile);
 	push(@prevGenConfigs, $config);
